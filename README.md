@@ -105,20 +105,20 @@ int main() {
 
   // 3.1 Selecting queue priority to schedule command execution
   std::array<float, 1> queue_priority = {0.f};
-  vk::driver_schedule_queue device_queue = {
+  vk::schedule_queue device_queue = {
     .family_index = 0,
     .priority = queue_priority
   };
 
   // Setting up only one device queue for this example
-  std::array<vk::driver_schedule_queue, 1> device_queues_arr = {
+  std::array<vk::schedule_queue, 1> device_queues_arr = {
     device_queue
   };
 
   // 3.2 Configuring logical device before creation
   vk::device_configuration logical_device_config = {
     .extension = device_extensions, // .extension is a std::span<const char*>
-    .queue = device_queues_arr // takes in a std::span<vk::driver_schedule_queue>
+    .queue = device_queues_arr // takes in a std::span<vk::schedule_queue>
   };
 
   // 3.3 Creates and instantiates the actual logical device handler with minimal specifications
