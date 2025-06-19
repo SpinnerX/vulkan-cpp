@@ -72,6 +72,12 @@ int main() {
 
 ## Setup Vulkan Physical and Logical Devices
 
+In this example, showing what are configuration settings that are only concerned as part of setting up the vulkan physical and logical devices.
+
+These configurations involve configuring what the vulkan API should look for as far the physical devices are concerns and what is currently available on your current machine.
+
+As for logical devices, configurations are for specifying properties such as queue families, queue indices, and specifying what queue handlers are available based on queue family specifications.
+
 ```C++
 
 int main() {
@@ -131,3 +137,118 @@ int main() {
 }
 ```
 
+ ## Setting up Vulkan Surface (with GLFW) 
+
+ This code example shows how to utilize `vk::surface`. Include minimal code example for setting the vulkan surface with the GLFW API.
+
+ This code involves showing how to setup a vulkan surface, specifying the configuration parts of the code to setup the vulkan surface successfully. This code assumes the vulkan instance, physical, and logical devices are already created prior.
+
+ ```C++
+
+int main() {
+  if(glfwInit()) {
+    // print if something went wrong
+    return -1;
+  }
+
+  GLFWwindow* window_handle = glfwCreateWindow(800, 600, "Vulkan Window", nullptr, nullptr);
+  // Creates and instantiates a VkSurfaceKHR under the hood, also allows to use vk::surface as a `VkSurfaceKHR` handler itself.
+  vk::surface surface_for_window = vk::surface(window_handle);
+
+  // If you do not want to manually invoke it in your abstractions, you can also do an invokation to a callback to resource free and specify when these freed callbacks get invoked in your application
+  vk::defer_resource_free([&surface_for_window](){
+    surface_for_window.destroy();
+    init_vk_instance.destroy();
+  });
+
+  // Eventually, I'd want to do:
+  // This way if you have something such as swapchain resizability, you can do immediate invokations. Though this may not even be needed, and you could just invoke .destroy() or manually destroy themself
+  // NOTE: If this was to be called into a class of some kind
+  vk::immediate_resource_free(this, [&surface_for_window](){
+    logical_device.destroy();
+    surface_for_window.destroy();
+  });
+
+  while(!glfwWindowShouldClose(window_handle)) {
+
+    glfwPollEvents();
+  }
+
+  // This invokes explicitly freeing the vulkan resources instantiated
+  init_vk_instance.destroy();
+  surface_for_window.destroy();
+  glfwDestroyWindow(window_handle);
+
+  // or you can just invoke resource_free
+  vk::resource_free();
+}
+```
+
+
+## Setup Vulkan Renderpass
+
+The code example is not available at the moment.
+
+
+## Setup Vulkan Swapchain
+
+This code example for handling a vulkan swapchain using `vulkan-cpp` is currently, incomplete.
+
+```C++
+
+int main() {
+  if(glfwInit()) {
+    // print if something went wrong
+    return -1;
+  }
+
+  GLFWwindow* window_handle = glfwCreateWindow(800, 600, "Vulkan Window", nullptr, nullptr);
+  // Creates and instantiates a VkSurfaceKHR under the hood, also allows to use vk::surface as a `VkSurfaceKHR` handler itself.
+  vk::surface surface_for_window = vk::surface(window_handle);
+
+  // If you do not want to manually invoke it in your abstractions, you can also do an invokation to a callback to resource free and specify when these freed callbacks get invoked in your application
+  vk::defer_resource_free([&surface_for_window](){
+    surface_for_window.destroy();
+    init_vk_instance.destroy();
+  });
+  // Eventually, I'd want to do:
+  // This way if you have something such as swapchain resizability, you can do immediate invokations. Though this may not even be needed, and you could just invoke .destroy() or manually destroy themself
+  vk::immediate_resource_free(this, [&surface_for_window](){
+    logical_device.destroy();
+    surface_for_window.destroy();
+  });
+
+  vk::present_queue presentation_queue(queue_settings); // creating single graphics queue
+  std::array<uint32_t, 1> queue_family_indices  { present_index };
+  vk::swapchain_configuration swapchain_config = {
+    .image = {
+      .min_count = request_min_count,
+      .format = surface_for_window.colorspace(),
+      .usage = (vk::image::color_attachment | vk::image::transfer_dst) // VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT = vk::image::color_attachment, VK_IMAGE_USAGE_TRANSFER_DST_BIT = vk::image::transfer_dst
+    },
+    .extent = surface_for_window.current_extent(),
+    .surface = surface_for_window,
+    .present_queue = presentation_queue,
+    .queue_family_indices = queue_family_indices // .queue_family_indices = std::span<uint32_t>
+    .composite_alpha = vk::composite:opaque,
+    .mode = vk::present::immediate // equivalent to doing .presentMode = VK_PRESENT_MODE_IMMEDIATE_KHR
+  };
+
+  vk::swapchain window1_swapchain = vk::swapchain(swapchain_config);
+
+  while(!glfwWindowShouldClose(window_handle)) {
+
+    glfwPollEvents();
+  }
+
+  // This invokes explicitly freeing the vulkan resources instantiated
+  init_vk_instance.destroy();
+  surface_for_window.destroy();
+  glfwDestroyWindow(window_handle);
+
+  // or you can just invoke resource_free
+  // This just does vkDeviceWaitIdle(logical_device); or we can directly invoke it as vkDeviceWaitIdle(logical_device) as well
+  vk::device_wait_idle(logical_device);
+  vk::resource_free();
+}
+```
